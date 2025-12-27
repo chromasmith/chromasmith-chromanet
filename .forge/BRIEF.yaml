@@ -1,0 +1,37 @@
+# =============================================================================
+# CHROMANET BRIEF — CDT Session Context
+# =============================================================================
+version: "1.0"
+project: ChromaNet Travel Data System
+status: planning_complete_ready_for_build
+
+summary: |
+  Multi-WAN travel router infrastructure using GL.iNet Slate AX as primary
+  router/VPN endpoint, Shadow as WiFi bridge, Solis Pro for cellular,
+  and iPhone as backup. MCP service on Snowball provides Claude Desktop
+  control over router configuration via Tailscale mesh.
+
+hardware:
+  - Slate AX (GL-AXT1800): Main router, VPN, Multi-WAN hub
+  - Shadow (GL-AR300M16-Ext): WiFi-to-Ethernet bridge, range extender
+  - Solis Pro 5G: Cellular hotspot (WiFi output only)
+  - iPhone: USB tethering backup
+
+key_integrations:
+  - ExpressVPN on Slate (OpenVPN)
+  - Tailscale mesh (Slate + Snowball + Laptop)
+  - gl-inet-mcp service on Snowball
+
+build_phases:
+  - phase_1: Bootstrap Slate via iPhone USB tethering
+  - phase_2: Install Tailscale on Slate
+  - phase_3: Configure ExpressVPN with bypass rules
+  - phase_4: Build gl-inet-mcp service on Snowball
+  - phase_5: Configure secondary sources (hotel WiFi, Solis)
+
+critical_vpn_bypasses:
+  - 100.64.0.0/10 (Tailscale)
+  - api.anthropic.com
+  - claude.ai
+
+blueprint_location: .forge/blueprint/Blueprint.v1.yaml
