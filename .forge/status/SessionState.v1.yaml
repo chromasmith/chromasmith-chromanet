@@ -2,21 +2,40 @@ session_date: "2025-12-27"
 project: ChromaNet
 
 milestones:
-  - Created chromasmith-chromanet repo with .forge structure
-  - Established BRIEF.yaml with system summary
-  - Blueprint stub created, pending full content
+  - Created chromasmith-chromanet repo with full .forge structure
+  - Surveyed 6 repos to identify blueprint storage patterns
+  - Established blueprint pattern: .forge/blueprint/Blueprint.v1.yaml (synclips-platform style)
+  - Created BRIEF.yaml with complete system context
+  - Documented hardware inventory, network scenarios, and MCP architecture
 
 decisions:
   - decision: Use synclips-platform pattern for blueprint storage
-    rationale: Blueprint is substantial, may split into multiple files later
-    impact: Blueprint lives at .forge/blueprint/Blueprint.v1.yaml
+    rationale: Blueprint is substantial (~600 lines), may split into multiple files later
+    impact: Full blueprint at .forge/blueprint/Blueprint.v1.yaml, terse brief at .forge/BRIEF.yaml
+
+  - decision: Shadow uses different subnet than Slate
+    rationale: Avoid IP conflict when both routers active
+    impact: Shadow at 192.168.9.1, Slate at 192.168.8.1
+
+  - decision: Defer Speedify bonding
+    rationale: $90/year cost, cannot run with ExpressVPN, Multi-WAN failover sufficient for now
+    impact: Use Slate's built-in Multi-WAN failover instead
 
 blockers: []
 
 next_steps:
   - priority: high
-    task: Populate full Blueprint.v1.yaml from source document
+    task: Populate Blueprint.v1.yaml with full converted content from source markdown
   - priority: high
-    task: Phase 1 bootstrap - get Slate online via iPhone tethering
+    task: Phase 1 bootstrap — power on Slate, iPhone USB tethering, initial setup
+  - priority: high
+    task: Phase 2 — install Tailscale on Slate, join to Tailnet
   - priority: medium
-    task: Build gl-inet-mcp service on Snowball
+    task: Phase 3 — configure ExpressVPN with Tailscale/Anthropic bypass rules
+  - priority: medium
+    task: Phase 4 — build gl-inet-mcp service on Snowball
+
+context: |
+  Planning complete. Full blueprint exists as markdown in Claude Web conversation.
+  Repo scaffolded with stubs. Next session: convert markdown blueprint to YAML,
+  then begin physical bootstrap with Slate AX hardware.
