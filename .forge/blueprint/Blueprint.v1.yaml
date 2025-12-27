@@ -1,11 +1,785 @@
-# =============================================================================
-# CHROMANET BLUEPRINT v1.0 — STUB
-# =============================================================================
-# Full blueprint to be populated from source document
-# Source: Claude Web conversation 2025-12-27
-# =============================================================================
+# ============================================================================
+# CHROMANET TRAVEL DATA BLUEPRINT v1.0
+# ============================================================================
+# Owner: Matt (Chromasmith LLC)
+# Created: 2025-12-27
+# Purpose: Machine-readable blueprint for travel connectivity system
+# Consumer: Future Claude sessions for build/configuration assistance
+# ============================================================================
 
 meta:
   version: "1.0"
-  status: stub_pending_content
-  note: Full blueprint content to be added in subsequent commit
+  codename: "Roma Smith Travel Data"
+  status: "planning_complete_ready_for_build"
+  last_updated: "2025-12-27"
+  context_chats:
+    - "https://claude.ai/chat/ea95305b-ff84-4b2c-97e7-ef7081b0ef22"
+    - "https://claude.ai/chat/d1f4065d-49fd-4ef3-9be5-09a4f0138e73"
+    - "https://claude.ai/chat/a775c3f3-a2f3-4660-adf5-0d7b4e9ac9b0"
+
+# ============================================================================
+# HARDWARE INVENTORY
+# ============================================================================
+
+hardware:
+  primary_router:
+    name: "Slate AX"
+    model: "GL.iNet GL-AXT1800"
+    role: "Main travel router, VPN endpoint, Multi-WAN hub"
+    status: "owned_unused"
+    specs:
+      cpu: "IPQ6000 1.2GHz quad-core"
+      architecture: "ARM Cortex-A53 (aarch64)"
+      ram: "512MB DDR3L"
+      flash: "128MB NAND"
+      wifi: "WiFi 6 (802.11ax)"
+      wifi_speed: "600Mbps (2.4GHz) + 1200Mbps (5GHz)"
+      ethernet: "2x Gigabit (1 WAN, 1 LAN)"
+      usb: "1x USB 3.0"
+      power: "USB-C 5V/4A"
+      openwrt: "21.02"
+    features:
+      - "OpenVPN client (up to 560Mbps with DCO)"
+      - "WireGuard client (up to 550Mbps)"
+      - "Multi-WAN failover"
+      - "Repeater mode"
+      - "USB tethering"
+      - "VPN policies (split tunneling)"
+      - "Tailscale support"
+      - "Captive portal handling"
+    admin:
+      default_ip: "192.168.8.1"
+      default_ssid: "GL-AXT1800-xxx"
+      ssh_port: 22
+    api:
+      type: "JSON-RPC"
+      endpoint: "http://192.168.8.1/rpc"
+      auth: "challenge-response"
+      library: "python-glinet"
+
+  wifi_bridge:
+    name: "Shadow"
+    model: "GL.iNet GL-AR300M16-Ext"
+    role: "WiFi capture/range extender, WiFi-to-Ethernet bridge"
+    status: "owned"
+    specs:
+      cpu: "QCA9531 @650MHz"
+      architecture: "MIPS"
+      ram: "128MB DDR2"
+      flash: "16MB NOR"
+      wifi: "802.11b/g/n"
+      wifi_speed: "300Mbps (2.4GHz only)"
+      ethernet: "2x 10/100 (1 WAN, 1 LAN)"
+      usb: "1x USB 2.0"
+      power: "Micro USB 5V/2A (<2W)"
+      weight: "40g"
+      dimensions: "58x58x25mm"
+      antennas: "2x External RP-SMA (upgradeable)"
+    features:
+      - "Repeater mode"
+      - "WiFi-to-Ethernet bridge"
+      - "OpenVPN/WireGuard client"
+      - "OpenWrt"
+    admin:
+      default_ip: "192.168.8.1"  # MUST CHANGE to avoid conflict with Slate
+      recommended_ip: "192.168.9.1"
+    antenna_upgrade:
+      status: "recommended_future"
+      stock: "2dBi"
+      upgrade: "9dBi omni pair"
+      cost: "~$15"
+      benefit: "4x gain improvement, still travel-packable"
+
+  cellular_hotspot:
+    name: "Solis Pro"
+    model: "SIMO Solis Pro 5G"
+    role: "Cellular internet source"
+    status: "owned"
+    specs:
+      connectivity: "5G/4G LTE"
+      wifi: "WiFi 6E"
+      battery: "Built-in power bank"
+      data: "Lifetime 12GB/year included"
+    limitations:
+      usb_port: "POWER ONLY - cannot USB tether"
+      connection_method: "WiFi output only"
+    integration:
+      requires: "WiFi-to-Ethernet bridge (Shadow) to connect to Slate WAN"
+
+  phone:
+    name: "iPhone"
+    role: "Backup internet source, bootstrap device"
+    features:
+      - "USB tethering to Slate"
+      - "Personal Hotspot WiFi"
+      - "Cellular via Airalo eSIM (travel)"
+    integration:
+      usb_tethering: "USB-C cable to Slate USB port"
+      trust_prompt: "Required on first connection"
+
+  existing_vpn_router:
+    name: "Aircove"
+    model: "ExpressVPN Aircove"
+    role: "Optional daisy-chain for full ExpressVPN stack"
+    status: "owned_not_primary"
+    notes: "Can chain Slate→Aircove→Devices for bonding+ExpressVPN, but adds complexity and ~10-15% overhead. NOT part of baseline setup."
+
+# ============================================================================
+# SOFTWARE & SUBSCRIPTIONS
+# ============================================================================
+
+software:
+  vpn:
+    provider: "ExpressVPN"
+    status: "active_subscription"
+    protocols:
+      - name: "OpenVPN"
+        config_source: "https://expressvpn.com → Manual Configuration"
+        note: "Use manual config username/password, NOT account login"
+      - name: "Lightway (WireGuard-like)"
+        note: "Faster, proprietary protocol"
+    router_compatibility: "Confirmed works with GL.iNet via OpenVPN"
+
+  bonding:
+    provider: "Speedify"
+    status: "deferred"
+    cost: "$90/year"
+    decision: "Implement later if bonding proves necessary"
+    notes:
+      - "Speedify includes AES-256 VPN encryption"
+      - "Cannot run simultaneously with ExpressVPN on router"
+      - "Use Slate Multi-WAN failover for now (free)"
+
+  tailscale:
+    status: "active"
+    current_devices:
+      - "Laptop"
+      - "Snowball"
+    pending_devices:
+      - "Slate AX (to be installed)"
+    purpose: "Private mesh network for MCP access to routers"
+    ip_range: "100.64.0.0/10"
+
+  fing:
+    subscription: "Fing Premium (active)"
+    status: "future_option"
+    use_cases:
+      - "Manual network scanning via phone app"
+      - "Potential Fing CLI on Slate (experimental)"
+    fing_agent:
+      compatible: false
+      reason: "Requires Raspberry Pi/Docker - routers lack resources"
+    fing_cli:
+      slate_compatibility: "Maybe (ARM build available)"
+      shadow_compatibility: "Maybe (MIPS build, but 16MB flash is tight)"
+      downloads:
+        arm: "https://s3-eu-west-1.amazonaws.com/fing-sdk/FingCLI/fing-arm.tar.gz"
+        mips: "https://s3-eu-west-1.amazonaws.com/fing-sdk/FingCLI/fing-mips.tar.gz"
+      priority: "Low - use phone app for now"
+
+# ============================================================================
+# NETWORK SCENARIOS
+# ============================================================================
+
+scenarios:
+  scenario_1:
+    name: "Slate + Public WiFi"
+    description: "Standard hotel/coffee shop setup"
+    topology: "Laptop → Slate WiFi → Slate (Repeater) → Public WiFi"
+    vpn: "ExpressVPN on Slate"
+    shadow: "Not needed"
+    use_when:
+      - "Public WiFi has decent signal"
+      - "Need VPN protection"
+    variants:
+      a: "Laptop direct to public WiFi (no Slate) - use device VPN app"
+      b: "Laptop → Slate → Public WiFi (standard)"
+      c: "Laptop → Slate → Shadow → Public WiFi (weak signal)"
+
+  scenario_2:
+    name: "Slate + Solis"
+    description: "Cellular via Solis hotspot"
+    topology: "Laptop → Slate WiFi → Slate (Repeater) → Solis WiFi"
+    alt_topology: "Laptop → Slate WiFi → Slate WAN → Shadow → Solis WiFi"
+    vpn: "ExpressVPN on Slate (recommended for sensitive work)"
+    shadow: "Optional - use if Solis needs Ethernet bridge to Slate"
+    use_when:
+      - "Public WiFi unavailable or untrusted"
+      - "Need reliable cellular backup"
+    vpn_notes: "Solis is private cellular, but VPN still recommended for admin work"
+
+  scenario_3:
+    name: "Slate + iPhone Tethering"
+    description: "Fallback to iPhone cellular"
+    topology: "Laptop → Slate WiFi → Slate USB → iPhone"
+    vpn: "ExpressVPN on Slate"
+    shadow: "Not needed"
+    use_when:
+      - "Public WiFi and Solis both poor"
+      - "Bootstrap/emergency"
+    variants:
+      a: "iPhone direct to laptop (WiFi/USB) - use device VPN app"
+      b: "iPhone → Slate USB → Laptop via Slate WiFi (standard)"
+      c: "iPhone Hotspot → Shadow → Ethernet → Slate WAN → Laptop"
+
+  scenario_4:
+    name: "Shadow as Range Extender"
+    description: "Boost weak public WiFi signal"
+    topology: "Laptop → Slate WiFi → Slate WAN → Ethernet → Shadow LAN → Shadow (Repeater) → Distant Public WiFi"
+    vpn: "ExpressVPN on Slate"
+    shadow: "Positioned near window with upgraded antennas"
+    use_when:
+      - "Public WiFi signal weak at desk"
+      - "Better signal near window"
+    benefit: "Shadow's external antennas + positioning captures weak signal"
+
+  scenario_5:
+    name: "Multi-WAN (Failover)"
+    description: "Multiple internet sources with automatic failover"
+    topology: |
+      Source 1: Shadow → Solis WiFi → Ethernet → Slate WAN
+      Source 2: Slate Repeater → Hotel WiFi
+      Source 3: iPhone → Slate USB (optional backup)
+    vpn: "ExpressVPN on Slate"
+    bonding: "Deferred (would require Speedify)"
+    failover: "Slate Multi-WAN handles automatic switching"
+    priority_order:
+      1: "Ethernet (Solis via Shadow) - most reliable"
+      2: "Repeater (Hotel WiFi) - usually fastest"
+      3: "Tethering (iPhone) - emergency backup"
+
+# ============================================================================
+# CONNECTION TOPOLOGY MATRIX
+# ============================================================================
+
+topology_matrix:
+  # Format: scenario-variant: [path, vpn_location, shadow_role]
+  "1a": ["Laptop → Public WiFi", "Device app", "Not used"]
+  "1b": ["Laptop → Slate → Public WiFi", "Slate", "Not used"]
+  "1c": ["Laptop → Slate → Shadow → Public WiFi", "Slate", "Range extender"]
+  "2a": ["Laptop → Solis (direct)", "Device app", "Not used"]
+  "2b": ["Laptop → Slate → Solis (WiFi repeater)", "Slate", "Not used"]
+  "2c": ["Laptop → Slate → Shadow → Solis", "Slate", "WiFi-to-Ethernet bridge"]
+  "3a": ["Laptop → iPhone (direct WiFi/USB)", "Device app", "Not used"]
+  "3b": ["Laptop → Slate → iPhone (USB tether)", "Slate", "Not used"]
+  "3c": ["Laptop → Slate → Shadow → iPhone hotspot", "Slate", "WiFi-to-Ethernet bridge"]
+
+# ============================================================================
+# VPN CONFIGURATION
+# ============================================================================
+
+vpn_config:
+  expressvpn_setup:
+    steps:
+      - "Log into expressvpn.com"
+      - "Go to 'Set Up Other Devices' → 'Manual Configuration'"
+      - "Note manual config username/password (DIFFERENT from account login)"
+      - "Download .ovpn files for preferred locations"
+      - "In Slate admin: VPN → OpenVPN Client"
+      - "Upload .ovpn file(s)"
+      - "Enter manual config credentials"
+      - "Apply → Connect"
+    kill_switch:
+      location: "VPN → VPN Dashboard → Tunnel Options"
+      default: "Enabled"
+      
+  vpn_policies:
+    purpose: "Split tunneling - exclude specific traffic from VPN"
+    location: "VPN → VPN Dashboard (firmware 4.x) or VPN → VPN Policies (firmware 3.x)"
+    
+    required_exclusions:
+      tailscale:
+        type: "IP range"
+        value: "100.64.0.0/10"
+        reason: "MCP traffic to Snowball must bypass VPN"
+      anthropic:
+        type: "Domain"
+        values:
+          - "api.anthropic.com"
+          - "claude.ai"
+          - "a-api.anthropic.com"
+          - "anthropic.com"
+          - "*.anthropic.com"
+          - "*.claude.ai"
+        reason: "Claude API has issues with some VPN exit IPs"
+        note: "Clear DNS cache after adding domain policies"
+        
+    dns_cache_clear:
+      mac: "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+      windows: "ipconfig /flushdns"
+
+  known_issues:
+    claude_mcp_vpn_conflict:
+      symptom: "Claude Desktop works, but MCP tools on Snowball fail"
+      cause: "ExpressVPN on laptop routes Tailscale traffic through VPN tunnel"
+      current_workaround: "Exclude Claude Desktop app via ExpressVPN split tunneling"
+      future_solution: "Move VPN to Slate + exclude Tailscale IPs (100.64.0.0/10)"
+      status: "noted_for_implementation"
+
+# ============================================================================
+# MCP ARCHITECTURE
+# ============================================================================
+
+mcp_architecture:
+  overview: |
+    Claude Desktop on laptop connects to MCP services on Snowball.
+    MCP services manage GL.iNet routers via JSON-RPC API.
+    Tailscale provides secure mesh network between all components.
+
+  components:
+    claude_desktop:
+      location: "Laptop"
+      connects_to: "Anthropic API + MCP services on Snowball"
+      
+    mcp_service:
+      name: "gl-inet-mcp"
+      location: "Snowball"
+      status: "to_be_built"
+      purpose: "Expose GL.iNet router control as MCP tools"
+      
+    routers:
+      - name: "Slate AX"
+        tailscale_ip: "TBD (after install)"
+        api_endpoint: "http://{tailscale_ip}/rpc"
+      - name: "Shadow"
+        tailscale_ip: "N/A (too constrained)"
+        management: "Via Slate or direct local access"
+
+  connectivity:
+    diagram: |
+      ┌─────────────────────────────────────────────────────────┐
+      │                    Claude Desktop                        │
+      │                         │                                │
+      │                    MCP Protocol                          │
+      └─────────────────────────────────────────────────────────┘
+                                │
+                                ▼ (via Tailscale)
+      ┌─────────────────────────────────────────────────────────┐
+      │              gl-inet-mcp (Python service)               │
+      │                     Snowball                             │
+      └─────────────────────────────────────────────────────────┘
+                                │
+                                ▼ (via Tailscale)
+      ┌─────────────────────────────────────────────────────────┐
+      │                      Slate AX                            │
+      │                  (JSON-RPC API)                          │
+      └─────────────────────────────────────────────────────────┘
+
+  planned_tools:
+    - name: "slate_status"
+      description: "Get router status (WAN, clients, signal, VPN state)"
+    - name: "slate_scan_wifi"
+      description: "Scan available WiFi networks"
+    - name: "slate_connect_wifi"
+      description: "Connect to WiFi network via repeater mode"
+    - name: "slate_vpn_setup"
+      description: "Configure VPN client (upload config, set credentials)"
+    - name: "slate_vpn_toggle"
+      description: "Enable/disable VPN connection"
+    - name: "slate_vpn_policy"
+      description: "Add/remove VPN policy rules"
+    - name: "slate_wan_priority"
+      description: "Set Multi-WAN failover priority"
+    - name: "slate_clients"
+      description: "List connected client devices"
+    - name: "slate_wifi_config"
+      description: "Get/set WiFi SSID and password"
+    - name: "slate_reboot"
+      description: "Reboot router"
+    - name: "slate_opkg_install"
+      description: "Install OpenWrt packages"
+
+  future_scenarios:
+    - name: "Automated Network Quality Monitor"
+      description: "MCP periodically tests all sources, reports status"
+    - name: "Smart Source Switching"
+      description: "Switch to optimal source based on task requirements"
+    - name: "Solis Data Budget Tracker"
+      description: "Monitor lifetime data allocation usage"
+    - name: "Security Posture Presets"
+      description: "One-command profiles (coffee_shop_mode, trusted_mode)"
+    - name: "Captive Portal Assistant"
+      description: "Detect and assist with hotel WiFi logins"
+    - name: "Shadow Reconnaissance"
+      description: "Position Shadow to scan networks, report best options"
+    - name: "Device-Specific Routing"
+      description: "Route some devices through VPN, others direct"
+    - name: "Failover Drill"
+      description: "Test failover before important calls"
+
+# ============================================================================
+# BUILD PROCESS
+# ============================================================================
+
+build_process:
+  phase_1_bootstrap:
+    name: "Manual Bootstrap - Get Slate Online"
+    duration: "~15 minutes"
+    goal: "Slate on Tailnet, accessible from Snowball"
+    
+    method: "iphone_usb_tethering"
+    reason: "Cleanest path - no adapter needed, no subnet conflicts"
+    
+    prerequisites:
+      - "Slate AX powered off"
+      - "iPhone with cellular data"
+      - "USB-C cable (iPhone to Slate)"
+      - "Laptop on hotel WiFi (maintains Claude Desktop connectivity)"
+    
+    steps:
+      - step: 1
+        action: "Power on Slate"
+        details: "Connect USB-C power adapter"
+        wait: "~60 seconds for LED to turn solid"
+        
+      - step: 2
+        action: "Enable iPhone Personal Hotspot"
+        details: "Settings → Personal Hotspot → Allow Others to Join = ON"
+        
+      - step: 3
+        action: "Connect iPhone to Slate via USB"
+        details: "USB-C cable from iPhone to Slate USB port"
+        
+      - step: 4
+        action: "Trust iPhone prompt"
+        details: "Tap 'Trust' on iPhone when prompted"
+        
+      - step: 5
+        action: "Connect laptop to Slate WiFi"
+        details: |
+          SSID: GL-AXT1800-xxx (check label on router)
+          Password: on router label
+        note: "You will temporarily lose hotel WiFi - this is expected"
+        
+      - step: 6
+        action: "Access Slate admin panel"
+        details: "Browse to http://192.168.8.1"
+        
+      - step: 7
+        action: "Initial setup wizard"
+        details: |
+          - Choose language
+          - Set admin password (use strong password, save it)
+          - Click Submit
+          
+      - step: 8
+        action: "Configure USB tethering"
+        details: "Internet → Tethering → Connect"
+        verify: "Green dot appears next to Tethering"
+        
+      - step: 9
+        action: "Verify internet connectivity"
+        details: "Try loading a webpage or check Internet status in admin panel"
+        
+      - step: 10
+        action: "Update firmware (if prompted)"
+        details: "System → Upgrade → Check for Updates"
+        note: "Firmware 4.x required for best API and Tailscale support"
+        wait: "Do not power off during update"
+
+  phase_2_tailscale:
+    name: "Install Tailscale on Slate"
+    duration: "~5 minutes"
+    goal: "Slate joins Tailnet, reachable from Snowball"
+    
+    steps:
+      - step: 1
+        action: "Enable SSH on Slate"
+        details: "System → Security → SSH Access → Enable"
+        note: "Default port 22, uses admin password"
+        
+      - step: 2
+        action: "SSH into Slate from laptop"
+        command: "ssh root@192.168.8.1"
+        password: "Slate admin password"
+        
+      - step: 3
+        action: "Install Tailscale"
+        commands:
+          - "opkg update"
+          - "opkg install tailscale"
+        alt_method: |
+          If not in opkg repos, check GL.iNet docs or use:
+          Applications → Tailscale (if available in GL.iNet UI)
+          
+      - step: 4
+        action: "Start Tailscale and authenticate"
+        commands:
+          - "tailscale up"
+        details: "Follow auth URL, approve device in Tailscale admin"
+        
+      - step: 5
+        action: "Note Slate's Tailscale IP"
+        command: "tailscale ip -4"
+        save: "Record this 100.x.x.x IP for MCP service config"
+        
+      - step: 6
+        action: "Verify connectivity from Snowball"
+        details: "From Snowball, ping Slate's Tailscale IP"
+        verify: "Successful ping = Slate is on Tailnet"
+
+  phase_3_vpn:
+    name: "Configure ExpressVPN"
+    duration: "~10 minutes"
+    goal: "ExpressVPN running on Slate with proper exclusions"
+    
+    steps:
+      - step: 1
+        action: "Get ExpressVPN config files"
+        details: |
+          - Log into expressvpn.com
+          - Set Up Other Devices → Manual Configuration
+          - Note username and password (NOT your account login)
+          - Download .ovpn files for preferred locations (e.g., US, UK)
+          
+      - step: 2
+        action: "Upload config to Slate"
+        details: |
+          - VPN → OpenVPN Client
+          - Add a New OpenVPN Configuration
+          - Upload .ovpn file
+          - Enter ExpressVPN manual config username/password
+          - Apply
+          
+      - step: 3
+        action: "Connect VPN"
+        details: "Toggle VPN switch to connect"
+        verify: "Status shows 'Connected', check IP at whatismyip.com"
+        
+      - step: 4
+        action: "Enable Kill Switch"
+        details: "VPN → VPN Dashboard → Tunnel Options → Kill Switch = ON"
+        
+      - step: 5
+        action: "Configure VPN policies"
+        details: |
+          VPN → VPN Dashboard → Add Policy Rule
+          
+          Rule 1 - Tailscale bypass:
+            Policy: Domain/IP
+            Rule: Do not use VPN for the following
+            Value: 100.64.0.0/10
+            
+          Rule 2 - Anthropic bypass:
+            Policy: Domain/IP
+            Rule: Do not use VPN for the following
+            Values:
+              - api.anthropic.com
+              - claude.ai
+              - anthropic.com
+              
+          Apply
+          
+      - step: 6
+        action: "Clear DNS cache on laptop"
+        mac: "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+        windows: "ipconfig /flushdns"
+        
+      - step: 7
+        action: "Verify MCP still works"
+        details: "Test Claude Desktop MCP tools to Snowball"
+
+  phase_4_mcp_service:
+    name: "Build GL.iNet MCP Service"
+    duration: "~30-60 minutes"
+    goal: "MCP service on Snowball exposes Slate management tools"
+    location: "Snowball"
+    
+    steps:
+      - step: 1
+        action: "Create MCP service project on Snowball"
+        details: "Clone or create gl-inet-mcp Python project"
+        
+      - step: 2
+        action: "Install python-glinet library"
+        command: "pip install python-glinet"
+        
+      - step: 3
+        action: "Configure service with Slate Tailscale IP"
+        details: "Set target router IP in config"
+        
+      - step: 4
+        action: "Implement MCP tool wrappers"
+        details: "Wrap JSON-RPC API calls as MCP tools"
+        
+      - step: 5
+        action: "Register service in Claude Desktop MCP config"
+        details: "Add to mcp_config.json on laptop"
+        
+      - step: 6
+        action: "Test tools"
+        examples:
+          - "Claude, what's my Slate router status?"
+          - "Claude, scan for available WiFi networks"
+          - "Claude, connect to 'Marriott_Guest' WiFi"
+
+  phase_5_secondary_config:
+    name: "Configure Secondary Internet Sources"
+    duration: "~15 minutes"
+    goal: "Hotel WiFi and Solis available as failover sources"
+    
+    steps:
+      - step: 1
+        action: "Connect Slate to hotel WiFi"
+        details: |
+          Internet → Repeater → Scan → Select hotel network
+          Enter password if required
+          Handle captive portal if prompted
+        verify: "Repeater shows green dot"
+        
+      - step: 2
+        action: "Configure Multi-WAN priority"
+        details: |
+          Network → Multi-WAN
+          Priority 1: Ethernet (for Solis via Shadow)
+          Priority 2: Repeater (Hotel WiFi)
+          Priority 3: Tethering (iPhone)
+          Enable Failover mode
+          Apply
+          
+      - step: 3
+        action: "Disconnect iPhone tethering"
+        details: "Unplug USB-C cable - no longer needed for bootstrap"
+        
+      - step: 4
+        action: "Connect laptop to Slate WiFi"
+        details: "Primary connection going forward"
+
+# ============================================================================
+# FUTURE ENHANCEMENTS
+# ============================================================================
+
+future_enhancements:
+  high_priority:
+    - name: "Shadow antenna upgrade"
+      description: "9dBi omni antennas for improved range"
+      cost: "~$15"
+      benefit: "4x gain for capturing weak hotel WiFi"
+      
+    - name: "Shadow subnet change"
+      description: "Change Shadow LAN IP to 192.168.9.1"
+      reason: "Avoid conflict with Slate's 192.168.8.1"
+      when: "Before first multi-device deployment"
+
+  medium_priority:
+    - name: "Speedify bonding"
+      description: "True packet-level bonding across multiple sources"
+      cost: "$90/year"
+      tradeoff: "Cannot run with ExpressVPN on router simultaneously"
+      decision: "Deferred until proven necessary"
+      
+    - name: "Fing CLI on Slate"
+      description: "Network scanning directly from router"
+      complexity: "Medium - may need ARM build testing"
+      alternative: "Use Fing phone app for now"
+
+  low_priority:
+    - name: "Aircove daisy-chain"
+      description: "Slate (Speedify) → Aircove (ExpressVPN) → Devices"
+      benefit: "Bonding + ExpressVPN without conflict"
+      tradeoff: "Extra hardware, ~10-15% double-encryption overhead"
+      decision: "Not part of baseline"
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+
+troubleshooting:
+  slate_no_internet_via_tethering:
+    symptoms: "iPhone connected but no internet on Slate"
+    fixes:
+      - "Ensure Personal Hotspot is ON on iPhone"
+      - "Use data-capable USB cable (not charge-only)"
+      - "Tap 'Trust' on iPhone when prompted"
+      - "Try: Internet → Tethering → Disconnect → Connect"
+      
+  vpn_blocks_mcp:
+    symptoms: "Claude Desktop works but MCP tools fail"
+    fixes:
+      - "Add 100.64.0.0/10 to VPN bypass policy"
+      - "Verify Tailscale is running on both laptop and Snowball"
+      - "Check Slate Tailscale IP is correct in MCP config"
+      - "Clear DNS cache on laptop"
+      
+  captive_portal_not_appearing:
+    symptoms: "Connected to hotel WiFi but can't authenticate"
+    fixes:
+      - "Try browsing to http://captive.apple.com"
+      - "Try browsing to http://neverssl.com"
+      - "Temporarily connect laptop directly to hotel WiFi to complete login"
+      - "Clone laptop MAC address to Slate repeater"
+      
+  shadow_not_connecting_to_solis:
+    symptoms: "Shadow can't see or connect to Solis WiFi"
+    fixes:
+      - "Move Shadow closer to Solis"
+      - "Verify Solis is powered on and broadcasting"
+      - "Check Shadow repeater settings have correct SSID/password"
+      - "Power cycle Shadow"
+
+  tailscale_not_connecting:
+    symptoms: "Slate on Tailnet but Snowball can't reach it"
+    fixes:
+      - "Verify both devices show 'Connected' in Tailscale admin"
+      - "Check firewall on Slate allows Tailscale traffic"
+      - "Try: tailscale down && tailscale up"
+      - "Verify Slate has internet connectivity"
+
+# ============================================================================
+# QUICK REFERENCE
+# ============================================================================
+
+quick_reference:
+  slate_admin:
+    url: "http://192.168.8.1"
+    ssh: "ssh root@192.168.8.1"
+    
+  shadow_admin:
+    url: "http://192.168.9.1"  # After subnet change
+    
+  useful_urls:
+    ip_check: "https://whatismyip.com"
+    speed_test: "https://speedtest.net"
+    dns_leak_test: "https://dnsleaktest.com"
+    expressvpn_setup: "https://expressvpn.com/setup"
+    glinet_docs: "https://docs.gl-inet.com"
+    
+  expressvpn_manual_config:
+    url: "https://expressvpn.com → Set Up Other Devices → Manual Configuration"
+    note: "Use manual config credentials, NOT account login"
+
+# ============================================================================
+# PACKING CHECKLIST
+# ============================================================================
+
+packing_checklist:
+  essential:
+    - item: "Slate AX router"
+      notes: "Main device"
+    - item: "Slate power adapter"
+      notes: "Check plug type for destination"
+    - item: "Shadow router"
+      notes: "Range extender / WiFi bridge"
+    - item: "Shadow USB power cable"
+      notes: "Micro USB"
+    - item: "Ethernet cable (short)"
+      notes: "Shadow LAN → Slate WAN"
+    - item: "USB-C cable"
+      notes: "iPhone tethering"
+    - item: "Solis Pro + charger"
+      notes: "Cellular backup"
+      
+  optional:
+    - item: "9dBi antennas for Shadow"
+      notes: "If purchased - for weak signal situations"
+    - item: "USB power bank"
+      notes: "Power Shadow on the go"
+    - item: "Travel adapter"
+      notes: "For international destinations"
+    - item: "Second Ethernet cable"
+      notes: "Backup"
+
+# ============================================================================
+# END OF BLUEPRINT
+# ============================================================================
+
