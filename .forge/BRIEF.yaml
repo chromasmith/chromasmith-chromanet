@@ -1,37 +1,66 @@
 # =============================================================================
 # CHROMANET BRIEF — CDT Session Context
 # =============================================================================
-version: "1.0"
-project: ChromaNet Travel Data System
-status: planning_complete_ready_for_build
+meta:
+  brief_version: "1.0"
+  last_updated: "2025-12-27"
+  blueprint_location: .forge/blueprint/Blueprint.v1.yaml
 
-summary: |
-  Multi-WAN travel router infrastructure using GL.iNet Slate AX as primary
-  router/VPN endpoint, Shadow as WiFi bridge, Solis Pro for cellular,
-  and iPhone as backup. MCP service on Snowball provides Claude Desktop
-  control over router configuration via Tailscale mesh.
+project:
+  name: ChromaNet Travel Data System
+  repo: chromasmith/chromasmith-chromanet
+  deployed_url: N/A (physical infrastructure)
+  purpose: |
+    Multi-WAN travel router system providing secure, redundant internet
+    connectivity while traveling. Slate AX serves as primary router with
+    VPN and failover. MCP service on Snowball enables Claude Desktop to
+    manage router configuration via natural language over Tailscale mesh.
 
-hardware:
-  - Slate AX (GL-AXT1800): Main router, VPN, Multi-WAN hub
-  - Shadow (GL-AR300M16-Ext): WiFi-to-Ethernet bridge, range extender
-  - Solis Pro 5G: Cellular hotspot (WiFi output only)
-  - iPhone: USB tethering backup
+infrastructure:
+  primary_router: GL.iNet Slate AX (GL-AXT1800) — OpenWrt, WiFi 6, Multi-WAN
+  wifi_bridge: GL.iNet Shadow (GL-AR300M16-Ext) — range extender, WiFi-to-Ethernet
+  cellular: Solis Pro 5G — WiFi output only, no USB tethering
+  backup: iPhone USB tethering to Slate
+  mcp_host: Snowball (Windows Server 2022 VM)
+  mesh: Tailscale (100.64.0.0/10)
 
-key_integrations:
-  - ExpressVPN on Slate (OpenVPN)
-  - Tailscale mesh (Slate + Snowball + Laptop)
-  - gl-inet-mcp service on Snowball
+stack:
+  router_api: GL.iNet JSON-RPC (http://{ip}/rpc)
+  router_library: python-glinet
+  vpn: ExpressVPN via OpenVPN (.ovpn configs)
+  mcp_service: gl-inet-mcp (Python, to be built on Snowball)
+
+architecture: |
+  Claude Desktop connects to gl-inet-mcp on Snowball via MCP protocol.
+  gl-inet-mcp wraps GL.iNet JSON-RPC API calls as MCP tools. Snowball
+  reaches Slate AX over Tailscale mesh. Slate manages all internet sources
+  (hotel WiFi via repeater, Solis via Shadow bridge, iPhone via USB) and
+  routes laptop traffic through ExpressVPN. VPN policies bypass Tailscale
+  and Anthropic domains to preserve MCP connectivity.
+
+scope:
+  target_users: Matt (single user, travel use)
+  monetization: Internal tool
+  tenancy: Single
+  auth: Router admin password + Tailscale ACLs
+
+conventions:
+  - Shadow must use different subnet than Slate (192.168.9.1 vs 192.168.8.1)
+  - VPN bypass required for 100.64.0.0/10 (Tailscale) and Anthropic domains
+  - iPhone USB tethering is bootstrap method — disconnect after Tailscale up
+  - MCP service lives on Snowball, not on router (resource constraints)
+  - ExpressVPN uses manual config credentials, NOT account login
+
+constraints:
+  - Solis cannot USB tether — WiFi output only, requires Shadow bridge
+  - Shadow too constrained for Tailscale (128MB RAM, 16MB flash)
+  - Speedify bonding deferred — using Slate Multi-WAN failover instead
+  - Cannot run Speedify and ExpressVPN simultaneously on router
+  - Fing Agent incompatible with routers — use phone app for scanning
 
 build_phases:
-  - phase_1: Bootstrap Slate via iPhone USB tethering
-  - phase_2: Install Tailscale on Slate
-  - phase_3: Configure ExpressVPN with bypass rules
-  - phase_4: Build gl-inet-mcp service on Snowball
-  - phase_5: Configure secondary sources (hotel WiFi, Solis)
-
-critical_vpn_bypasses:
-  - 100.64.0.0/10 (Tailscale)
-  - api.anthropic.com
-  - claude.ai
-
-blueprint_location: .forge/blueprint/Blueprint.v1.yaml
+  phase_1: Bootstrap Slate via iPhone USB tethering (~15 min)
+  phase_2: Install Tailscale on Slate (~5 min)
+  phase_3: Configure ExpressVPN with bypass rules (~10 min)
+  phase_4: Build gl-inet-mcp service on Snowball (~30-60 min)
+  phase_5: Configure secondary sources and Multi-WAN (~15 min)
