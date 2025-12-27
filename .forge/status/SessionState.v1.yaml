@@ -1,41 +1,33 @@
 session_date: "2025-12-27"
 project: ChromaNet
-
 milestones:
-  - Created chromasmith-chromanet repo with full .forge structure
-  - Surveyed 6 repos to identify blueprint storage patterns
-  - Established blueprint pattern: .forge/blueprint/Blueprint.v1.yaml (synclips-platform style)
-  - Created BRIEF.yaml with complete system context
-  - Documented hardware inventory, network scenarios, and MCP architecture
-
+  - Full blueprint populated in Google Docs (serves as Blueprint.v1.yaml)
+  - Clarified MCP architecture: CDT → Snowball → Tailscale → Slate JSON-RPC
+  - Identified bootstrap dependency: gl-inet-mcp must exist before MCP-assisted setup
+  - Attempted Phase 1 bootstrap — hit connection issues, paused for replanning
 decisions:
-  - decision: Use synclips-platform pattern for blueprint storage
-    rationale: Blueprint is substantial (~600 lines), may split into multiple files later
-    impact: Full blueprint at .forge/blueprint/Blueprint.v1.yaml, terse brief at .forge/BRIEF.yaml
-
-  - decision: Shadow uses different subnet than Slate
-    rationale: Avoid IP conflict when both routers active
-    impact: Shadow at 192.168.9.1, Slate at 192.168.8.1
-
-  - decision: Defer Speedify bonding
-    rationale: $90/year cost, cannot run with ExpressVPN, Multi-WAN failover sufficient for now
-    impact: Use Slate's built-in Multi-WAN failover instead
-
-blockers: []
-
+  - decision: Postpone hardware bootstrap until gl-inet-mcp exists
+    rationale: MCP service is prerequisite for assisted router management
+    impact: Manual bootstrap required first, then MCP takes over for ongoing config
+  - decision: Matt will manually bootstrap Slate offline
+    rationale: Resolve USB tethering and WiFi connection issues without session pressure
+    impact: Slate on Tailnet with known 100.x.x.x IP before next session
+  - decision: Next session focuses on building gl-inet-mcp
+    rationale: Follows Matt's regimented MCP build process
+    impact: Service ready on Snowball when Slate comes online
+blockers:
+  - gl-inet-mcp service does not exist on Snowball
+  - Slate not yet on Tailnet (pending manual bootstrap)
 next_steps:
   - priority: high
-    task: Populate Blueprint.v1.yaml with full converted content from source markdown
+    task: Matt manually bootstraps Slate — laptop on Slate WiFi, iPhone USB as WAN, install Tailscale, note 100.x.x.x IP
   - priority: high
-    task: Phase 1 bootstrap — power on Slate, iPhone USB tethering, initial setup
-  - priority: high
-    task: Phase 2 — install Tailscale on Slate, join to Tailnet
+    task: Build gl-inet-mcp on Snowball using MCP build process (next session)
   - priority: medium
-    task: Phase 3 — configure ExpressVPN with Tailscale/Anthropic bypass rules
-  - priority: medium
-    task: Phase 4 — build gl-inet-mcp service on Snowball
-
+    task: Resume Phase 3+ from blueprint once MCP service operational
 context: |
-  Planning complete. Full blueprint exists as markdown in Claude Web conversation.
-  Repo scaffolded with stubs. Next session: convert markdown blueprint to YAML,
-  then begin physical bootstrap with Slate AX hardware.
+  Blueprint complete in Google Docs. Hardware on hand but not configured.
+  Key insight: Tailscale is fundamental to MCP control — Snowball needs route to Slate.
+  iPhone USB tethering failed (no "1 connection" shown) — likely cable or trust issue.
+  Laptop-to-Slate WiFi also failed — not yet diagnosed.
+  Matt to resolve both manually, then next session builds MCP service.
